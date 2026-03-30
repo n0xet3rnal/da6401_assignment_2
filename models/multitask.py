@@ -22,6 +22,8 @@ class MultiTaskPerceptionModel(nn.Module):
 
     def forward(self, x: torch.Tensor):
         """Forward pass for multi-task model.
+        Args:
+            x: Input tensor of shape [B, in_channels, H, W].
         Returns:
             A dict with keys:
             - 'classification': [B, num_breeds] logits tensor.
