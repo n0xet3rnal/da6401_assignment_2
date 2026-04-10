@@ -1,46 +1,203 @@
-# DA6401 Assignment-2 Skeleton Guide
+# DA6401 Assignment 2: Multi-Task Pet Perception
 
-This repository is an instructional skeleton for building the complete visual perception pipeline on Oxford-IIIT Pet.
+This project implements a unified computer vision pipeline on the Oxford-IIIT Pet dataset with four capabilities:
+
+- Task 1: Breed classification (37 classes)
+- Task 2: Pet localization (bounding box regression)
+- Task 3: Pet segmentation (3-class trimap segmentation)
+- Task 4: Unified multitask inference (classification + localization + segmentation)
+
+The models are based on a VGG11 backbone with optional BatchNorm and custom dropout.
+
+## Directory Structure
+
+```text
+da6401_assignment_2/
+|-- .gitignore                     # Ignore rules used for generated/local artifacts
+|-- README.md
+|-- inference.py                   # Placeholder for generic inference/evaluation
+|-- requirements.txt               # Python dependencies
+|-- train.py                       # Training entrypoint for Tasks 1/2/3
+|
+|-- checkpoints/
+|   |-- checkpoints.md             # Checkpoint naming and submission notes
+|
+|-- data/
+|   |-- pets_dataset.py            # Dataset + transforms + train/val split logic
+|
+|-- losses/
+|   |-- __init__.py
+|   |-- iou_loss.py                # Custom IoU loss for localization
+|
+|-- models/
+|   |-- __init__.py
+|   |-- classification.py          # VGG11Classifier (Task 1)
+|   |-- layers.py                  # CustomDropout layer
+|   |-- localization.py            # VGG11Localizer (Task 2)
+|   |-- multitask.py               # Shared-backbone multitask model (Task 4)
+|   |-- segmentation.py            # VGG11UNet + Dice/BCE-Dice losses (Task 3)
+|   |-- vgg11.py                   # VGG11 backbone (with optional BatchNorm)
+```
+
+## Data Source
+
+This repository uses the **Oxford-IIIT Pet Dataset**.
+
+- Dataset page: <https://www.robots.ox.ac.uk/~vgg/data/pets/>
+- Local data root used in code: `data/`
+- Relevant annotation sources:
+    - `data/annotations/list.txt` for class mapping
+    - `data/annotations/trainval.txt` and `test.txt` for splits
+    - `data/annotations/xmls/` for bounding boxes
+    - `data/annotations/trimaps/` for segmentation masks
+
+The dataset loader (`data/pets_dataset.py`) performs:
+
+- Deterministic train/val split (stratified by breed)
+- Image resizing to `224x224`
+- ImageNet normalization
+- Classification-only train augmentations (flip + color jitter variants)
+- Bounding box conversion to `[x_center, y_center, width, height]` in resized image pixel space
+- Trimap remap from `{1,2,3}` to `{0,1,2}`
+
+## Model Architecture
+
+### 1. Backbone (`models/vgg11.py`)
+
+- VGG11 configuration A
+- Optional BatchNorm
+- Adaptive average pooling to `7x7`
+- Fully connected classifier stack with `CustomDropout`
+
+### 2. Classification Model (`models/classification.py`)
+
+- Class: `VGG11Classifier`
+- Output: logits over 37 breeds
+- Loss in training: `CrossEntropyLoss`
+
+### 3. Localization Model (`models/localization.py`)
+
+- Class: `VGG11Localizer`
+- Uses VGG11 feature extractor + regression head
+- Output format: `[x_center, y_center, width, height]`
+- Supports transfer learning from classifier checkpoint
+- Supports backbone freezing modes: `none`, `all`, `partial`
+
+### 4. Segmentation Model (`models/segmentation.py`)
+
+- Class: `VGG11UNet`
+- Encoder: VGG11 feature pyramid
+- Decoder: transposed convolutions + skip connections (`DoubleConv` blocks)
+- Output: per-pixel logits with 3 classes
+- Supports transfer learning and selective backbone freezing
+
+### 5. Multitask Model (`models/multitask.py`)
+
+- Class: `MultiTaskPerceptionModel`
+- Shared VGG11 encoder + three task heads:
+    - Classification head
+    - Bounding box regression head
+    - Segmentation decoder/head
+- Loads task-specific checkpoints (`classifier.pth`, `localizer.pth`, `unet.pth`) to initialize shared model components
+- Root-level import compatibility via `multitask.py`
+
+## Loss Functions
+
+### Localization Loss
+
+Defined in `train.py` (Task 2):
+
+- `MSELoss(pred_bbox, gt_bbox)`
+- `IoULoss(pred_bbox, gt_bbox)` from `losses/iou_loss.py`
+- Total loss: `L_loc = L_MSE + L_IoU`
+
+`IoULoss` details:
+
+- Input format: `[x_center, y_center, width, height]`
+- IoU clamped to `[0, 1]`
+- Loss = `1 - IoU`
+- Supported reductions: `mean` (default), `sum`, `none`
+
+### Segmentation Loss
+
+Defined inside `VGG11UNet` as `BCEDiceLoss`:
+
+- BCEWithLogits component for pixel-level supervision
+- Dice component for overlap quality
+- Weighted sum (default 0.5 BCE + 0.5 Dice)
+
+### Classification Loss
+
+- `CrossEntropyLoss` on breed logits.
+
+## Training Pipeline
+
+All training is handled by `train.py` with argument `--task`:
+
+- `--task 1`: Classification training (`checkpoints/classifier.pth`)
+- `--task 2`: Localization training (`checkpoints/localizer.pth`)
+- `--task 3`: Segmentation training (`checkpoints/unet.pth`)
+
+Common training features:
+
+- Optimizer: `AdamW`
+- Scheduler: `ReduceLROnPlateau`
+- Optional mixed precision (`--amp`)
+- W&B logging for train/validation metrics
+- Configurable dropout, workers, batch size, and freeze strategy
+
+### Quick Start Commands
+
+```bash
+# 1) Setup
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# 2) Train task-wise
+python train.py --task 1 --epochs 40 --batch_size 32 --pin_memory
+python train.py --task 2 --epochs 40 --batch_size 8 --pin_memory --pretrained_vgg_path checkpoints/classifier.pth
+python train.py --task 3 --epochs 40 --batch_size 4 --pin_memory --pretrained_vgg_path checkpoints/classifier.pth
 
 
-### ADDITIONAL INSTRUCTIONS FOR ASSIGNMENT2:
-- Ensure VGG11 is implemented according to the official paper(https://arxiv.org/abs/1409.1556). The only difference being injecting BatchNorm and CustomDropout layers is your design choice.
-- Train all the networks on normalized images as input (as the test set given by autograder will be normalized images).
-- The output of Localization model = [x_center, y_center, width, height] all these numbers are with respect to image coordinates, in pixel space (not normalized)
-- Train the object localization network with the following loss function: MSE + custom_IOU_loss.
-- Make sure the custom_IOU loss is in range: [0,1]
-- In the custom IOU loss, you have to implement all the two reduction types: ["mean", "sum"] and the default reduction type should be "mean". You may include any other reduction type as well, which will help your network learn better.
-- multitask.py shd load the saved checkpoints (classifier.pth, localizer.pth, unet.pth), initialize the shared backbone and heads with these trained weights and do prediction.
-- Keep paths as relative paths for loading in multitask.py
-- Assume input image size is fixed according to vgg11 paper(can be hardcoded need not pass as args)
-- Stick to the arguments of the functions and classes given in the github repo, if you include any additional arguments make sure they always have some default value.
-- Do not import any other python packages apart from the ones mentioned in assignment pdf, if you do so the autograder will instantly crash and your submission will not be evaluated.
-- The following classes will be used by autograder: 
-    ```
-        from models.vgg11 import VGG11
-        from models.layers import CustomDropout
-        from losses.iou_loss import IoULoss
-        from multitask import MultiTaskPerceptionModel
-    ```
-- The submission link for this assignment will be available by Saturday(04/04/2026) on gradescope
+```
 
+## Multitask and Other Scripts
 
+### Core Multitask Entry
 
+- `multitask.py`: exposes `MultiTaskPerceptionModel` from `models.multitask` for autograder compatibility.
 
+### Experiment/Analysis Scripts
 
-### GENERAL INSTRUCTIONS:
-- From this assignment onwards, if we find any wandb report which is private/inaccessible while grading, there wont be any second chance, that submission will be marked 0 for wandb marks.
-- The entireity of plots presented in the wandb report should be interactive and logged in the wandb project. Any screenshot or images of plots will straightly be marked 0 for that question.
-- Gradescope offers an option to activate whichever submission you want to, and that submission will be used for evaluation. Under any circumstances, no requests to be raised to TAs to activate any of your prior submissions. It is the student's responsibility to do so(if required) before submission deadline.
-- Assignment2 discussion forum has been opened on moodle for any doubt clarification/discussion.   
+- `scripts/visualize_features.py`
+    - Logs early and deep convolution feature maps from the classifier.
+- `scripts/plot_activations.py`
+    - Compares conv3 activation distributions for BN vs no-BN setup.
+- `scripts/eval_and_log.py`
+    - Evaluates localization IoU and segmentation metrics and logs visual tables.
+- `scripts/log_seg_metrics.py`
+    - Runs segmentation validation and logs Dice, pixel accuracy, and val loss.
+- `scripts/wild_inference.py`
+    - Runs multitask predictions on `data/wild_images/` and logs bbox + segmentation overlays.
+- `scripts/retrain1.sh`
+    - Retrains classification variants for quick ablation reruns.
 
+## Checkpoints
 
+Expected filenames in `checkpoints/`:
 
+- `classifier.pth`
+- `localizer.pth`
+- `unet.pth`
 
-## Contact
+These are consumed by the multitask model initialization and grading pipeline.
 
-For questions or issues, please contact the teaching staff or post on the course forum.
+## Report Links
 
----
+- W&B Report: [DA6401 Assignment 2 Report](https://api.wandb.ai/links/be22b022-indian-institute-of-technology-madras/praemu7o)
 
-Good luck with your implementation!
+## Submission Details
+
+- Name: Jerry Jose
+- Roll Number: BE22B022

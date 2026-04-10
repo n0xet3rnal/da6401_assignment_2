@@ -1,0 +1,9 @@
+__pycache__
+scripts/
+run_all_experiments.sh
+venv
+data/annotations
+data/images
+data/wild_images
+checkpoints/*.pth
+wandb/
