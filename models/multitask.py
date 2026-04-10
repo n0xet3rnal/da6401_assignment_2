@@ -18,8 +18,8 @@ class MultiTaskPerceptionModel(nn.Module):
         #per assignment instructions :
         import gdown
         gdown.download(id="1CLN_a1GClmyPFqtdzZBlcBcSnRpFDg6o", output=classifier_path, quiet=False)
-        gdown.download(id="<localizer.pth drive id>", output=localizer_path, quiet=False)
-        gdown.download(id="<unet.pth drive id>", output=unet_path, quiet=False)
+        gdown.download(id="1BvoH9_qKey4h1LEgevEUGRShNbrY_cf0", output=localizer_path, quiet=False)
+        gdown.download(id="1z7LIDnCBqYrTmrvi9nlcu0pkq4xLCoZI", output=unet_path, quiet=False)
     
         
         
