@@ -197,6 +197,8 @@ These are consumed by the multitask model initialization and grading pipeline.
 
 - W&B Report: [DA6401 Assignment 2 Report](https://api.wandb.ai/links/be22b022-indian-institute-of-technology-madras/praemu7o)
 
+- GitHub Repo Link : [GitHub Repo] (https://github.com/n0xet3rnal/da6401_assignment_2.git)
+
 ## Submission Details
 
 - Name: Jerry Jose
