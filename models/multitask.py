@@ -17,9 +17,9 @@ class MultiTaskPerceptionModel(nn.Module):
     def __init__(self, num_breeds: int = 37, seg_classes: int = 3, in_channels: int = 3, classifier_path: str = "checkpoints/classifier.pth", localizer_path: str = "checkpoints/localizer.pth", unet_path: str = "checkpoints/unet.pth"):
         #per assignment instructions :
         import gdown
-        gdown.download(id="1N8d1XB_lFiFJD9EvX9xFrqbplkM8mRy-", output=classifier_path, quiet=False)
-        gdown.download(id="11nGS0sNHOMTeV9hck0UkFVnCYPzVg7Y5", output=localizer_path, quiet=False)
-        gdown.download(id="1ABV1b3SFyyjTLm1S0zOMi7EeGBgxdmsz", output=unet_path, quiet=False)
+        gdown.download(id="1Kpe28u6Lw1KHhBT_pe720ZA5iqa-jyMo", output=classifier_path, quiet=False)
+        gdown.download(id="12YSVAel-GjHI9O4ou42hO3pLwt0R6Yy3", output=localizer_path, quiet=False)
+        gdown.download(id="1AjB-cwlbPl5z03UhpsmQ67wOzlMPQDTo", output=unet_path, quiet=False)
     
         
         

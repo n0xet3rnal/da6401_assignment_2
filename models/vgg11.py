@@ -19,26 +19,34 @@ class VGG11(nn.Module):
         super().__init__()
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, 3, padding=1),      # 0
-            nn.ReLU(inplace=True),               # 1
-            nn.MaxPool2d(2, 2),                  # 2
-            nn.Conv2d(64, 128, 3, padding=1),    # 3
-            nn.ReLU(inplace=True),               # 4
-            nn.MaxPool2d(2, 2),                  # 5
-            nn.Conv2d(128, 256, 3, padding=1),   # 6
-            nn.ReLU(inplace=True),               # 7
-            nn.Conv2d(256, 256, 3, padding=1),   # 8
-            nn.ReLU(inplace=True),               # 9
-            nn.MaxPool2d(2, 2),                  # 10
-            nn.Conv2d(256, 512, 3, padding=1),   # 11
-            nn.ReLU(inplace=True),               # 12
-            nn.Conv2d(512, 512, 3, padding=1),   # 13
-            nn.ReLU(inplace=True),               # 14
-            nn.MaxPool2d(2, 2),                  # 15
-            nn.Conv2d(512, 512, 3, padding=1),   # 16
+            nn.BatchNorm2d(64),                  # 1
+            nn.ReLU(inplace=True),               # 2
+            nn.MaxPool2d(2, 2),                  # 3
+            nn.Conv2d(64, 128, 3, padding=1),    # 4
+            nn.BatchNorm2d(128),                 # 5
+            nn.ReLU(inplace=True),               # 6
+            nn.MaxPool2d(2, 2),                  # 7
+            nn.Conv2d(128, 256, 3, padding=1),   # 8
+            nn.BatchNorm2d(256),                 # 9
+            nn.ReLU(inplace=True),               # 10
+            nn.Conv2d(256, 256, 3, padding=1),   # 11
+            nn.BatchNorm2d(256),                 # 12
+            nn.ReLU(inplace=True),               # 13
+            nn.MaxPool2d(2, 2),                  # 14
+            nn.Conv2d(256, 512, 3, padding=1),   # 15
+            nn.BatchNorm2d(512),                 # 16
             nn.ReLU(inplace=True),               # 17
             nn.Conv2d(512, 512, 3, padding=1),   # 18
-            nn.ReLU(inplace=True),               # 19
-            nn.MaxPool2d(2, 2),                  # 20
+            nn.BatchNorm2d(512),                 # 19
+            nn.ReLU(inplace=True),               # 20
+            nn.MaxPool2d(2, 2),                  # 21
+            nn.Conv2d(512, 512, 3, padding=1),   # 22
+            nn.BatchNorm2d(512),                 # 23
+            nn.ReLU(inplace=True),               # 24
+            nn.Conv2d(512, 512, 3, padding=1),   # 25
+            nn.BatchNorm2d(512),                 # 26
+            nn.ReLU(inplace=True),               # 27
+            nn.MaxPool2d(2, 2),                  # 28
         )
 
         # Dropout is placed before the two largest FC layers to regularize dense capacity.
