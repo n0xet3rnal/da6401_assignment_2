@@ -17,21 +17,29 @@ class VGG11(nn.Module):
         use_batchnorm: bool = True,
     ):
         super().__init__()
-        cfg = [64, "M", 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"]
-
-        layers = []
-        curr_in = in_channels
-        for v in cfg:
-            if v == "M":
-                layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
-            else:
-                layers.append(nn.Conv2d(curr_in, v, kernel_size=3, padding=1))
-                if use_batchnorm:
-                    layers.append(nn.BatchNorm2d(v))
-                layers.append(nn.ReLU(inplace=True))
-                curr_in = v
-
-        self.features = nn.Sequential(*layers)
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, 3, padding=1),      # 0
+            nn.ReLU(inplace=True),               # 1
+            nn.MaxPool2d(2, 2),                  # 2
+            nn.Conv2d(64, 128, 3, padding=1),    # 3
+            nn.ReLU(inplace=True),               # 4
+            nn.MaxPool2d(2, 2),                  # 5
+            nn.Conv2d(128, 256, 3, padding=1),   # 6
+            nn.ReLU(inplace=True),               # 7
+            nn.Conv2d(256, 256, 3, padding=1),   # 8
+            nn.ReLU(inplace=True),               # 9
+            nn.MaxPool2d(2, 2),                  # 10
+            nn.Conv2d(256, 512, 3, padding=1),   # 11
+            nn.ReLU(inplace=True),               # 12
+            nn.Conv2d(512, 512, 3, padding=1),   # 13
+            nn.ReLU(inplace=True),               # 14
+            nn.MaxPool2d(2, 2),                  # 15
+            nn.Conv2d(512, 512, 3, padding=1),   # 16
+            nn.ReLU(inplace=True),               # 17
+            nn.Conv2d(512, 512, 3, padding=1),   # 18
+            nn.ReLU(inplace=True),               # 19
+            nn.MaxPool2d(2, 2),                  # 20
+        )
 
         # Dropout is placed before the two largest FC layers to regularize dense capacity.
         self.classifier = nn.Sequential(
