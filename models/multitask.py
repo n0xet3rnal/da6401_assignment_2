@@ -140,7 +140,7 @@ class MultiTaskPerceptionModel(nn.Module):
         pooled = torch.nn.functional.adaptive_avg_pool2d(p5, (7, 7))
         flat = torch.flatten(pooled, 1)
         class_logits = self.classifier_head(flat)
-        bbox_coords = self.regressor_head(flat)
+        bbox = self.regressor_head(flat)
 
         d4 = self.up4(p5)
         d4 = self.dec4(torch.cat([d4, p4], dim=1))
@@ -154,4 +154,8 @@ class MultiTaskPerceptionModel(nn.Module):
         d0 = self.dec0(d0)
         seg_mask = self.seg_head(d0)
 
-        return class_logits, bbox_coords, seg_mask
+        return {
+            'classification': class_logits,
+            'localization': bbox,
+            'segmentation': seg_mask
+        }
